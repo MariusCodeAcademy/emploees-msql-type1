@@ -4,9 +4,20 @@ const mysql = require('mysql2');
 const dbConfig = require('../dbConfig');
 
 router.get('/', (req, res) => {
-  // const id = req.params.id;
+  //?sortBy=salary&order=desc - query params
+  console.log('query', req.query);
+
   const conn = mysql.createConnection(dbConfig);
-  const sql = 'SELECT * FROM employees';
+  let sql = 'SELECT * FROM employees';
+  const { sortBy, order, sex } = req.query;
+
+  if (sortBy && order) {
+    sql = `SELECT * FROM employees ORDER BY ${sortBy}`;
+  }
+  if (sex) {
+    sql = `SELECT * FROM employees WHERE sex = '${sex}'`;
+  }
+
   conn.execute(sql, (err, result) => {
     if (err) {
       console.log('err', err);
