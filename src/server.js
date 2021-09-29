@@ -52,4 +52,30 @@ app.get('/create-table', (req, res) => {
   conn.end();
 });
 
+app.get('/add-employee', (req, res) => {
+  const body = {
+    name: 'James Bond',
+    salary: 2500,
+    age: 40,
+    experience: 7,
+    sex: 'male',
+  };
+  // conn
+  const conn = mysql.createConnection(dbConfig);
+  // query
+  const sql = `
+  INSERT INTO employees(name, salary, age, experience, sex)
+  VALUES (?, ?, ?, ?, ?)
+  `;
+  // console.log('ob', Object.values(body));
+  // execute - prepared statment
+  conn.execute(sql, Object.values(body), (err, result) => {
+    if (err) return console.log('err', err);
+    console.log('result', result);
+  });
+  // close
+  conn.end();
+  res.send('trying to add a row');
+});
+
 app.listen(PORT, console.log(`Server is running on port ${PORT}`));
