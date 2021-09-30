@@ -9,15 +9,22 @@ router.get('/', (req, res) => {
 
   const conn = mysql.createConnection(dbConfig);
   let sql = 'SELECT * FROM employees';
-  const { sortBy, order, sex } = req.query;
+  const { sortBy, order, sex, search } = req.query;
 
   if (sortBy && order) {
     //conn.escapeId(sortBy) = `salary`
-    sql = `SELECT * FROM employees ORDER BY ${conn.escapeId(sortBy)} ASC`;
+    sql = `SELECT * FROM employees ORDER BY ${conn.escapeId(sortBy)}`;
+    sql = order === 'desc' ? sql + ' DESC' : sql + ' ASC';
   }
   if (sex) {
     sql = `SELECT * FROM employees WHERE sex = ${conn.escape(sex)}`;
   }
+  if (search) {
+    sql = `SELECT * FROM employees WHERE name LIKE CONCAT('%',${conn.escape(
+      search
+    )},'%')`;
+  }
+
   console.log('sql', sql);
   conn.execute(sql, (err, result) => {
     if (err) {
@@ -26,22 +33,26 @@ router.get('/', (req, res) => {
       return;
     }
     // console.log('result', result);
-    res.send({
-      msg: 'Gauti duomenys',
-      result: result.map((i) => ({ name: i.name, salary: i.salary })),
-    });
+    if (result.length >= 1) {
+      return res.send({
+        msg: 'success',
+        result: result,
+      });
+    }
+    res.send({ msg: 'no data' });
   });
   conn.end();
 });
 
-router.get('/add', (req, res) => {
-  const body = {
-    name: 'James Delete',
-    salary: 2500,
-    age: 40,
-    experience: 7,
-    sex: 'male',
-  };
+router.post('/add', (req, res) => {
+  // const body = {
+  // name: 'James Delete',
+  // salary: 2500,
+  // age: 40,
+  // experience: 7,
+  // sex: 'male',
+  // };
+  const body = req.body;
   // conn
   const conn = mysql.createConnection(dbConfig);
   // query
@@ -52,12 +63,15 @@ router.get('/add', (req, res) => {
   // console.log('ob', Object.values(body));
   // execute - prepared statment
   conn.execute(sql, Object.values(body), (err, result) => {
-    if (err) return console.log('err', err);
+    if (err) {
+      res.send({ msg: 'fail', err });
+      return console.log('err', err);
+    }
     console.log('result', result);
+    res.send({ msg: 'success', result });
   });
   // close
   conn.end();
-  res.send('trying to add a row');
 });
 
 router.get('/single/:id', (req, res) => {
@@ -67,17 +81,20 @@ router.get('/single/:id', (req, res) => {
   conn.execute(sql, [id], (err, result) => {
     if (err) {
       console.log('err', err);
-      res.send({ msg: 'Klaida', err });
+      res.send({ msg: 'fail', err });
       return;
     }
     console.log('result', result);
-    res.send({ msg: 'Gauti duomenys', result });
+    if (result.length === 1) {
+      return res.send({ msg: 'success', item: result[0] });
+    }
+    res.status(400).send({ msg: 'item not found' });
   });
 
   conn.end();
 });
-
-router.get('/edit/:id', (req, res) => {
+// veiktu su per postman atsiustais duomenimis
+router.put('/edit/:id', (req, res) => {
   const id = req.params.id;
   const body = {
     name: 'James Bond',
@@ -109,17 +126,21 @@ router.get('/edit/:id', (req, res) => {
   conn.end();
 });
 
-router.get('/delete/:id', (req, res) => {
+router.delete('/delete/:id', (req, res) => {
   const id = req.params.id;
   const sql = 'DELETE FROM employees WHERE id = ?';
   const conn = mysql.createConnection(dbConfig);
-  conn.query(sql, [id], (err, result) => {
+  conn.query(sql, [id], (err, result, fields) => {
     if (err) {
-      res.send({ msg: 'Klaida', err });
+      res.send({ msg: 'fail', err });
       return console.log('err', err);
     }
-    console.log('result', result);
-    res.send({ msg: 'Deleted row with id: ' + id });
+    console.log('fields', fields);
+    // patikrinti ar istrynem eilute
+    if (result.affectedRows === 1) {
+      return res.send({ msg: 'success', result, fields });
+    }
+    res.status(400).send({ msg: 'id not found or not provided' });
   });
   conn.end();
 });

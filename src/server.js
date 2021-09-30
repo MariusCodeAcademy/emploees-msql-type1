@@ -24,7 +24,9 @@ app.get('/', (req, res) => {
   //   if (err) return console.log('err', err);
   //   console.log('result', result);
   // });
-  res.send('connected');
+  // surasti kaip patikrinti ar prisijungiam prie db ar ne
+  // grazinti ar esam prisijunge ar ne prie db
+  res.send({ msg: 'connected' });
   conn.end();
 });
 
