@@ -12,20 +12,24 @@ router.get('/', (req, res) => {
   const { sortBy, order, sex } = req.query;
 
   if (sortBy && order) {
-    sql = `SELECT * FROM employees ORDER BY ${sortBy}`;
+    //conn.escapeId(sortBy) = `salary`
+    sql = `SELECT * FROM employees ORDER BY ${conn.escapeId(sortBy)} ASC`;
   }
   if (sex) {
-    sql = `SELECT * FROM employees WHERE sex = '${sex}'`;
+    sql = `SELECT * FROM employees WHERE sex = ${conn.escape(sex)}`;
   }
-
+  console.log('sql', sql);
   conn.execute(sql, (err, result) => {
     if (err) {
       console.log('err', err);
       res.send({ msg: 'Klaida', err });
       return;
     }
-    console.log('result', result);
-    res.send({ msg: 'Gauti duomenys', result });
+    // console.log('result', result);
+    res.send({
+      msg: 'Gauti duomenys',
+      result: result.map((i) => ({ name: i.name, salary: i.salary })),
+    });
   });
   conn.end();
 });
